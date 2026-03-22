@@ -1,0 +1,6 @@
+@TortasYaniAPI_HostAddress = http://localhost:5225
+
+GET {{TortasYaniAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
