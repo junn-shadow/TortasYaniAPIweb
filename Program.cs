@@ -10,15 +10,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-if (databaseUrl != null)
+if (!string.IsNullOrEmpty(databaseUrl))
 {
-    // PostgreSQL para Railway
+    // Convierte la URL de Railway al formato Npgsql
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    var connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(databaseUrl));
+        options.UseNpgsql(connectionString));
 }
 else
 {
-    // SQLite para desarrollo local
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite("Data Source=tortasyani.db"));
 }
