@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TortasYaniAPI.Data;
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,8 +10,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=tortasyani.db"));
+if (databaseUrl != null)
+{
+    // PostgreSQL para Railway
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(databaseUrl));
+}
+else
+{
+    // SQLite para desarrollo local
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlite("Data Source=tortasyani.db"));
+}
 
 builder.Services.AddCors(options =>
 {
