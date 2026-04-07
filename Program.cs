@@ -3,7 +3,7 @@ using TortasYaniAPI.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using System.Text;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
@@ -28,12 +28,14 @@ if (!string.IsNullOrEmpty(databaseUrl))
                 maxRetryCount: 3, 
                 maxRetryDelay: TimeSpan.FromSeconds(5), 
                 errorCodesToAdd: null);
-        }));
+        })
+        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 }
 else
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite("Data Source=tortasyani.db"));
+        options.UseSqlite("Data Source=tortasyani.db")
+        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 }
 
 builder.Services.AddCors(options =>
