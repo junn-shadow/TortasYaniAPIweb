@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using TortasYaniAPI.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Text;
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
@@ -44,6 +48,23 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHealthChecks();
+builder.Services.AddScoped<TortasYaniAPI.Services.AuthService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var jwtKey = builder.Configuration["Jwt:Key"] ?? "KeySuperSecretTemporal2024PorqueNoEstabaEnEnv0123";
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
 
 var app = builder.Build();
 
@@ -60,6 +81,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFlutter");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthChecks("/health");

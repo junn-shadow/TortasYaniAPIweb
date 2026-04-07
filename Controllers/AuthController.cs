@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using TortasYaniAPI.DTOs;
 using TortasYaniAPI.Services;
 using TortasYaniAPI.Data;
+using Microsoft.AspNetCore.Authorization;
 
 namespace TortasYaniAPI.Controllers
 {
@@ -11,9 +12,9 @@ namespace TortasYaniAPI.Controllers
     {
         private readonly AuthService _authService;
 
-        public AuthController(AppDbContext context)
+        public AuthController(AuthService authService)
         {
-            _authService = new AuthService(context);
+            _authService = authService;
         }
 
         [HttpPost("login")]
@@ -34,6 +35,7 @@ namespace TortasYaniAPI.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPut("update")]
         public IActionResult Update([FromBody] UpdateDTO dto)
         {

@@ -1,24 +1,29 @@
 using TortasYaniAPI.Data;
 using TortasYaniAPI.DTOs;
 using TortasYaniAPI.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace TortasYaniAPI.Services
 {
     public class AuthService
     {
         private readonly AppDbContext _context;
+        private readonly IConfiguration _config;
 
-        public AuthService(AppDbContext context)
+        public AuthService(AppDbContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         public AuthResponseDTO Login(LoginDTO dto)
         {
-            var user = _context.Users.FirstOrDefault(u =>
-                u.Email == dto.Email && u.Password == dto.Password);
+            var user = _context.Users.FirstOrDefault(u => u.Email == dto.Email);
 
-            if (user == null)
+            if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.Password))
             {
                 return new AuthResponseDTO
                 {
@@ -27,11 +32,13 @@ namespace TortasYaniAPI.Services
                 };
             }
 
+            var token = GenerarJwtToken(user);
+
             return new AuthResponseDTO
             {
                 Success = true,
                 Message = "Login exitoso",
-                Token = "token-temporal-123",
+                Token = token,
                 NombreCompleto = user.NombreCompleto,
                 FotoUrl = user.FotoUrl
             };
@@ -54,7 +61,7 @@ namespace TortasYaniAPI.Services
             {
                 NombreCompleto = dto.NombreCompleto,
                 Email = dto.Email,
-                Password = dto.Password,
+                Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 Telefono = dto.Telefono,
                 Direccion = dto.Direccion,
                 FotoUrl = dto.FotoUrl
@@ -92,7 +99,7 @@ namespace TortasYaniAPI.Services
 
             if (!string.IsNullOrEmpty(dto.NuevaPassword))
             {
-                user.Password = dto.NuevaPassword;
+                user.Password = BCrypt.Net.BCrypt.HashPassword(dto.NuevaPassword);
             }
 
             _context.SaveChanges();
@@ -104,6 +111,28 @@ namespace TortasYaniAPI.Services
                 NombreCompleto = user.NombreCompleto,
                 FotoUrl = user.FotoUrl
             };
+        }
+
+        private string GenerarJwtToken(User user)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? "KeySuperSecretTemporal2024PorqueNoEstabaEnEnv0123"));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("id", user.Id.ToString())
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(24),
+                signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
