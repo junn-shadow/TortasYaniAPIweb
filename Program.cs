@@ -42,8 +42,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFlutter", policy =>
     {
-        var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "http://localhost:3000";
-        policy.WithOrigins(frontendUrl)
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -73,11 +72,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    // Hotfix temporal: Elimina el esquema corrupto/viejo
-    try {
-        db.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS \"Users\" CASCADE; DROP TABLE IF EXISTS \"__EFMigrationsHistory\" CASCADE;");
-    } catch {}
-    
     db.Database.Migrate();
 }
 
