@@ -18,7 +18,13 @@ if (!string.IsNullOrEmpty(databaseUrl))
     var connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
 
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(connectionString));
+        options.UseNpgsql(connectionString, sqlOptions => 
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3, 
+                maxRetryDelay: TimeSpan.FromSeconds(5), 
+                errorCodesToAdd: null);
+        }));
 }
 else
 {
@@ -30,25 +36,32 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFlutter", policy =>
     {
-        policy.AllowAnyOrigin()
+        var frontendUrl = Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "http://localhost:3000";
+        policy.WithOrigins(frontendUrl)
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
 });
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseCors("AllowFlutter");
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 app.Run($"http://0.0.0.0:{port}");

@@ -8,5 +8,6 @@ namespace TortasYaniAPI.Models
         public string Password { get; set; } = string.Empty;
         public string Telefono { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
+        public string? FotoUrl { get; set; }
     }
 }

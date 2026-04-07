@@ -23,7 +23,7 @@ namespace TortasYaniAPI.Services
                 return new AuthResponseDTO
                 {
                     Success = false,
-                    Message = "Correo o contraseÒa incorrectos"
+                    Message = "Correo o contrase√±a incorrectos"
                 };
             }
 
@@ -32,7 +32,8 @@ namespace TortasYaniAPI.Services
                 Success = true,
                 Message = "Login exitoso",
                 Token = "token-temporal-123",
-                NombreCompleto = user.NombreCompleto
+                NombreCompleto = user.NombreCompleto,
+                FotoUrl = user.FotoUrl
             };
         }
 
@@ -45,7 +46,7 @@ namespace TortasYaniAPI.Services
                 return new AuthResponseDTO
                 {
                     Success = false,
-                    Message = "Este correo ya est· registrado"
+                    Message = "Este correo ya est√° registrado"
                 };
             }
 
@@ -55,7 +56,8 @@ namespace TortasYaniAPI.Services
                 Email = dto.Email,
                 Password = dto.Password,
                 Telefono = dto.Telefono,
-                Direccion = dto.Direccion
+                Direccion = dto.Direccion,
+                FotoUrl = dto.FotoUrl
             };
 
             _context.Users.Add(nuevoUsuario);
@@ -65,7 +67,8 @@ namespace TortasYaniAPI.Services
             {
                 Success = true,
                 Message = "Usuario registrado correctamente",
-                NombreCompleto = dto.NombreCompleto
+                NombreCompleto = dto.NombreCompleto,
+                FotoUrl = dto.FotoUrl
             };
         }
 
@@ -85,6 +88,7 @@ namespace TortasYaniAPI.Services
             user.NombreCompleto = dto.NombreCompleto;
             user.Telefono = dto.Telefono;
             user.Direccion = dto.Direccion;
+            user.FotoUrl = dto.FotoUrl;
 
             if (!string.IsNullOrEmpty(dto.NuevaPassword))
             {
@@ -97,7 +101,8 @@ namespace TortasYaniAPI.Services
             {
                 Success = true,
                 Message = "Perfil actualizado correctamente",
-                NombreCompleto = user.NombreCompleto
+                NombreCompleto = user.NombreCompleto,
+                FotoUrl = user.FotoUrl
             };
         }
     }

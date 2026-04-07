@@ -13,6 +13,7 @@ namespace TortasYaniAPI.DTOs
         public string Password { get; set; } = string.Empty;
         public string Telefono { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
+        public string? FotoUrl { get; set; }
     }
 
     public class AuthResponseDTO
@@ -21,6 +22,7 @@ namespace TortasYaniAPI.DTOs
         public string Message { get; set; } = string.Empty;
         public string? Token { get; set; }
         public string? NombreCompleto { get; set; }
+        public string? FotoUrl { get; set; }
     }
     public class UpdateDTO
     {
@@ -29,5 +31,6 @@ namespace TortasYaniAPI.DTOs
         public string Telefono { get; set; } = string.Empty;
         public string Direccion { get; set; } = string.Empty;
         public string? NuevaPassword { get; set; }
+        public string? FotoUrl { get; set; }
     }
 }
