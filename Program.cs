@@ -84,7 +84,10 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
+        // Eliminar la tabla vieja y recrear con el esquema correcto
+        db.Database.EnsureDeleted();
         db.Database.EnsureCreated();
+        Console.WriteLine("Base de datos creada correctamente con esquema actualizado");
     }
     catch (Exception ex)
     {
