@@ -10,8 +10,8 @@ using TortasYaniAPI.Data;
 namespace TortasYaniAPI.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260407040937_AddUserInfo")]
-    partial class AddUserInfo
+    [Migration("20260408025817_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -16,23 +16,33 @@ builder.Services.AddSwaggerGen();
 
 if (!string.IsNullOrEmpty(databaseUrl))
 {
-    // Convierte la URL de Railway al formato Npgsql
-    var uri = new Uri(databaseUrl);
+    Console.WriteLine("Usando la configuración de PostgreSQL (Railway)");
+    
+    // Railway puede usar postgres:// o postgresql://, normalizamos a postgresql://
+    var normalizedUrl = databaseUrl.Replace("postgres://", "postgresql://");
+    var uri = new Uri(normalizedUrl);
     var userInfo = uri.UserInfo.Split(':');
-    var connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    var host = uri.Host;
+    var port2 = uri.Port > 0 ? uri.Port : 5432;
+    var database = uri.AbsolutePath.TrimStart('/');
+    var username = Uri.UnescapeDataString(userInfo[0]);
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+    
+    var connectionString = $"Host={host};Port={port2};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
 
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(connectionString, sqlOptions => 
         {
             sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 3, 
-                maxRetryDelay: TimeSpan.FromSeconds(5), 
+                maxRetryCount: 5, 
+                maxRetryDelay: TimeSpan.FromSeconds(10), 
                 errorCodesToAdd: null);
         })
         .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 }
 else
 {
+    Console.WriteLine("Usando la configuración de SQLite (local)");
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite("Data Source=tortasyani.db")
         .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
@@ -72,14 +82,19 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        db.Database.EnsureCreated();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error al inicializar la base de datos");
+    }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseCors("AllowFlutter");
 app.UseAuthentication();

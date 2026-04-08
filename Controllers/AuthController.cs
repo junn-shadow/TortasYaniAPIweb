@@ -11,38 +11,64 @@ namespace TortasYaniAPI.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AuthService authService)
+        public AuthController(AuthService authService, ILogger<AuthController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginDTO dto)
         {
-            var result = _authService.Login(dto);
-            if (!result.Success)
-                return Unauthorized(result);
-            return Ok(result);
+            try
+            {
+                var result = _authService.Login(dto);
+                if (!result.Success)
+                    return Unauthorized(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en login");
+                return StatusCode(500, new { Success = false, Message = "Error interno del servidor: " + ex.Message });
+            }
         }
 
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterDTO dto)
         {
-            var result = _authService.Register(dto);
-            if (!result.Success)
-                return BadRequest(result);
-            return Ok(result);
+            try
+            {
+                var result = _authService.Register(dto);
+                if (!result.Success)
+                    return BadRequest(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en registro");
+                return StatusCode(500, new { Success = false, Message = "Error interno del servidor: " + ex.Message });
+            }
         }
 
         [Authorize]
         [HttpPut("update")]
         public IActionResult Update([FromBody] UpdateDTO dto)
         {
-            var result = _authService.Update(dto);
-            if (!result.Success)
-                return BadRequest(result);
-            return Ok(result);
+            try
+            {
+                var result = _authService.Update(dto);
+                if (!result.Success)
+                    return BadRequest(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en actualización");
+                return StatusCode(500, new { Success = false, Message = "Error interno del servidor: " + ex.Message });
+            }
         }
     }
 }
