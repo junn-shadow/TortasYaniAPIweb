@@ -23,6 +23,8 @@ namespace TortasYaniAPI.DTOs
         public string? Token { get; set; }
         public string? NombreCompleto { get; set; }
         public string? FotoUrl { get; set; }
+        public string? Telefono { get; set; }
+        public string? Direccion { get; set; }
     }
     public class UpdateDTO
     {

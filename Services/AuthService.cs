@@ -40,7 +40,9 @@ namespace TortasYaniAPI.Services
                 Message = "Login exitoso",
                 Token = token,
                 NombreCompleto = user.NombreCompleto,
-                FotoUrl = user.FotoUrl
+                FotoUrl = user.FotoUrl,
+                Telefono = user.Telefono,
+                Direccion = user.Direccion
             };
         }
 
@@ -75,7 +77,9 @@ namespace TortasYaniAPI.Services
                 Success = true,
                 Message = "Usuario registrado correctamente",
                 NombreCompleto = dto.NombreCompleto,
-                FotoUrl = dto.FotoUrl
+                FotoUrl = dto.FotoUrl,
+                Telefono = dto.Telefono,
+                Direccion = dto.Direccion
             };
         }
 

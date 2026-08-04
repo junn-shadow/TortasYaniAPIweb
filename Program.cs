@@ -4,9 +4,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using TortasYaniAPI.Models;
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,39 +14,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-if (!string.IsNullOrEmpty(databaseUrl))
-{
-    Console.WriteLine("Usando la configuración de PostgreSQL (Railway)");
-    
-    // Railway puede usar postgres:// o postgresql://, normalizamos a postgresql://
-    var normalizedUrl = databaseUrl.Replace("postgres://", "postgresql://");
-    var uri = new Uri(normalizedUrl);
-    var userInfo = uri.UserInfo.Split(':');
-    var host = uri.Host;
-    var port2 = uri.Port > 0 ? uri.Port : 5432;
-    var database = uri.AbsolutePath.TrimStart('/');
-    var username = Uri.UnescapeDataString(userInfo[0]);
-    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
-    
-    var connectionString = $"Host={host};Port={port2};Database={database};Username={username};Password={password};SSL Mode=Require;Trust Server Certificate=true";
-
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(connectionString, sqlOptions => 
-        {
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 5, 
-                maxRetryDelay: TimeSpan.FromSeconds(10), 
-                errorCodesToAdd: null);
-        })
-        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
-}
-else
-{
-    Console.WriteLine("Usando la configuración de SQLite (local)");
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlite("Data Source=tortasyani.db")
-        .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
-}
+Console.WriteLine("Usando la configuración de SQLite (local)");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=tortasyani.db"));
 
 builder.Services.AddCors(options =>
 {
@@ -64,7 +34,11 @@ builder.Services.AddScoped<TortasYaniAPI.Services.AuthService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var jwtKey = builder.Configuration["Jwt:Key"] ?? "KeySuperSecretTemporal2024PorqueNoEstabaEnEnv0123";
+        var jwtKey = builder.Configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(jwtKey))
+        {
+            throw new InvalidOperationException("La clave JWT ('Jwt:Key') no está configurada.");
+        }
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -79,12 +53,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
+app.UseMiddleware<TortasYaniAPI.Middleware.ExceptionHandlingMiddleware>();
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        db.Database.EnsureCreated();
+        db.Database.Migrate();
+
+        // Sembrar usuario admin por defecto si no existe
+        if (!db.Users.Any(u => u.Email == "admin@gmail.com"))
+        {
+            db.Users.Add(new User
+            {
+                NombreCompleto = "Administrador",
+                Email = "admin@gmail.com",
+                Password = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                Telefono = "999999999",
+                Direccion = "Tienda Principal",
+                FotoUrl = ""
+            });
+            db.SaveChanges();
+            // Removed automatic deletion of non-admin users. This block is now disabled to preserve client accounts and sample data.
+            // var nonAdmin = db.Users.Where(u => u.Email != "admin@gmail.com");
+            // if (nonAdmin.Any())
+            // {
+            //     db.Users.RemoveRange(nonAdmin);
+            //     db.SaveChanges();
+            // }
+        }
     }
     catch (Exception ex)
     {
