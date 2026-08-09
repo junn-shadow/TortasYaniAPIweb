@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using TortasYaniAPI.Data;
 using TortasYaniAPI.DTOs;
 using TortasYaniAPI.Models;
@@ -61,25 +62,44 @@ namespace TortasYaniAPI.Services
 
             var nuevoUsuario = new User
             {
-                NombreCompleto = dto.NombreCompleto,
-                Email = dto.Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                Telefono = dto.Telefono,
-                Direccion = dto.Direccion,
-                FotoUrl = dto.FotoUrl
+                NombreCompleto = dto.NombreCompleto ?? "",
+                Email = dto.Email ?? "",
+                Password = BCrypt.Net.BCrypt.HashPassword(dto.Password ?? ""),
+                Telefono = dto.Telefono ?? "",
+                Direccion = dto.Direccion ?? "",
+                FotoUrl = dto.FotoUrl ?? "",
+                Rol = "client",
+                Activo = true,
+                Descripcion = ""
             };
 
             _context.Users.Add(nuevoUsuario);
-            _context.SaveChanges();
+            
+            try
+            {
+                _context.SaveChanges();
+            }
+            catch (Exception)
+            {
+                if (_context.Database.IsNpgsql())
+                {
+                    _context.Database.ExecuteSqlRaw(@"SELECT setval(pg_get_serial_sequence('""Users""', 'Id'), coalesce(max(""Id""), 1)) FROM ""Users"";");
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             return new AuthResponseDTO
             {
                 Success = true,
                 Message = "Usuario registrado correctamente",
-                NombreCompleto = dto.NombreCompleto,
-                FotoUrl = dto.FotoUrl,
-                Telefono = dto.Telefono,
-                Direccion = dto.Direccion
+                NombreCompleto = nuevoUsuario.NombreCompleto,
+                FotoUrl = nuevoUsuario.FotoUrl,
+                Telefono = nuevoUsuario.Telefono,
+                Direccion = nuevoUsuario.Direccion
             };
         }
 

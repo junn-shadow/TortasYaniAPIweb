@@ -102,13 +102,18 @@ using (var scope = app.Services.CreateScope())
                 FotoUrl = ""
             });
             db.SaveChanges();
-            // Removed automatic deletion of non-admin users. This block is now disabled to preserve client accounts and sample data.
-            // var nonAdmin = db.Users.Where(u => u.Email != "admin@gmail.com");
-            // if (nonAdmin.Any())
-            // {
-            //     db.Users.RemoveRange(nonAdmin);
-            //     db.SaveChanges();
-            // }
+        }
+
+        if (db.Database.IsNpgsql())
+        {
+            try
+            {
+                db.Database.ExecuteSqlRaw(@"SELECT setval(pg_get_serial_sequence('""Users""', 'Id'), coalesce(max(""Id""), 1)) FROM ""Users"";");
+            }
+            catch (Exception seqEx)
+            {
+                Console.WriteLine($"Error al sincronizar la secuencia de Users: {seqEx.Message}");
+            }
         }
     }
     catch (Exception ex)

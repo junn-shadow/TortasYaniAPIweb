@@ -49,7 +49,8 @@ namespace TortasYaniAPI.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en registro");
-                return StatusCode(500, new { Success = false, Message = "Error interno del servidor: " + ex.Message });
+                var message = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                return StatusCode(500, new { Success = false, Message = "Error interno del servidor: " + message });
             }
         }
 
