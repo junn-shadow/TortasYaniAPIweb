@@ -14,9 +14,35 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-Console.WriteLine("Usando la configuración de SQLite (local)");
+var postgresUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                  ?? Environment.GetEnvironmentVariable("POSTGRES_URL")
+                  ?? builder.Configuration.GetConnectionString("PostgreSQL");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=tortasyani.db"));
+{
+    if (!string.IsNullOrEmpty(postgresUrl))
+    {
+        Console.WriteLine("Conectando a PostgreSQL (Railway)");
+        string connStr = postgresUrl;
+        if (postgresUrl.StartsWith("postgres://") || postgresUrl.StartsWith("postgresql://"))
+        {
+            var uri = new Uri(postgresUrl);
+            var userInfo = uri.UserInfo.Split(':');
+            var user = userInfo[0];
+            var password = userInfo.Length > 1 ? userInfo[1] : "";
+            var host = uri.Host;
+            var portNum = uri.Port > 0 ? uri.Port : 5432;
+            var dbName = uri.AbsolutePath.TrimStart('/');
+            connStr = $"Host={host};Port={portNum};Database={dbName};Username={user};Password={password};SSL Mode=Require;Trust Server Certificate=true;";
+        }
+        options.UseNpgsql(connStr);
+    }
+    else
+    {
+        Console.WriteLine("Usando la configuración de SQLite (local)");
+        options.UseSqlite("Data Source=tortasyani.db");
+    }
+});
 
 builder.Services.AddCors(options =>
 {
