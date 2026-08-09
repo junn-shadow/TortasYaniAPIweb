@@ -108,7 +108,11 @@ using (var scope = app.Services.CreateScope())
         {
             try
             {
-                db.Database.ExecuteSqlRaw(@"SELECT setval(pg_get_serial_sequence('""Users""', 'Id'), coalesce(max(""Id""), 1)) FROM ""Users"";");
+                db.Database.ExecuteSqlRaw(@"
+                    CREATE SEQUENCE IF NOT EXISTS ""Users_Id_seq"";
+                    ALTER TABLE ""Users"" ALTER COLUMN ""Id"" SET DEFAULT nextval('""Users_Id_seq""');
+                    SELECT setval('""Users_Id_seq""', coalesce(max(""Id""), 1)) FROM ""Users"";
+                ");
             }
             catch (Exception seqEx)
             {
