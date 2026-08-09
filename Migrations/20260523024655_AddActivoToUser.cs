@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -13,9 +13,9 @@ namespace TortasYaniAPI.Migrations
             migrationBuilder.AddColumn<bool>(
                 name: "Activo",
                 table: "Users",
-                type: "INTEGER",
+                type: "boolean",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "Descripcion",
