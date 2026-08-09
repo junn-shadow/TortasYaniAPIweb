@@ -84,9 +84,12 @@ namespace TortasYaniAPI.Services
                 if (_context.Database.IsNpgsql())
                 {
                     _context.Database.ExecuteSqlRaw(@"
-                        CREATE SEQUENCE IF NOT EXISTS ""Users_Id_seq"";
-                        ALTER TABLE ""Users"" ALTER COLUMN ""Id"" SET DEFAULT nextval('""Users_Id_seq""');
-                        SELECT setval('""Users_Id_seq""', coalesce(max(""Id""), 1)) FROM ""Users"";
+                        DO $$
+                        BEGIN
+                            CREATE SEQUENCE IF NOT EXISTS ""Users_Id_seq"";
+                            ALTER TABLE ""Users"" ALTER COLUMN ""Id"" SET DEFAULT nextval('""Users_Id_seq""');
+                            PERFORM setval('""Users_Id_seq""', COALESCE((SELECT MAX(""Id"") FROM ""Users""), 1));
+                        END $$;
                     ");
                     _context.SaveChanges();
                 }

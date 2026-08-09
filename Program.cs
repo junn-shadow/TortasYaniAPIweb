@@ -109,14 +109,21 @@ using (var scope = app.Services.CreateScope())
             try
             {
                 db.Database.ExecuteSqlRaw(@"
-                    CREATE SEQUENCE IF NOT EXISTS ""Users_Id_seq"";
-                    ALTER TABLE ""Users"" ALTER COLUMN ""Id"" SET DEFAULT nextval('""Users_Id_seq""');
-                    SELECT setval('""Users_Id_seq""', coalesce(max(""Id""), 1)) FROM ""Users"";
+                    DO $$
+                    BEGIN
+                        CREATE SEQUENCE IF NOT EXISTS ""Users_Id_seq"";
+                        ALTER TABLE ""Users"" ALTER COLUMN ""Id"" SET DEFAULT nextval('""Users_Id_seq""');
+                        PERFORM setval('""Users_Id_seq""', COALESCE((SELECT MAX(""Id"") FROM ""Users""), 1));
+
+                        CREATE SEQUENCE IF NOT EXISTS ""Products_Id_seq"";
+                        ALTER TABLE ""Products"" ALTER COLUMN ""Id"" SET DEFAULT nextval('""Products_Id_seq""');
+                        PERFORM setval('""Products_Id_seq""', COALESCE((SELECT MAX(""Id"") FROM ""Products""), 1));
+                    END $$;
                 ");
             }
             catch (Exception seqEx)
             {
-                Console.WriteLine($"Error al sincronizar la secuencia de Users: {seqEx.Message}");
+                Console.WriteLine($"Error al sincronizar las secuencias de PostgreSQL: {seqEx.Message}");
             }
         }
     }

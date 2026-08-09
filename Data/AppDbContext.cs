@@ -15,6 +15,18 @@ namespace TortasYaniAPI.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.UseIdentityByDefaultColumns();
+
+            modelBuilder.Entity<User>(b =>
+            {
+                b.Property(u => u.Id).UseIdentityByDefaultColumn();
+            });
+
+            modelBuilder.Entity<Product>(b =>
+            {
+                b.Property(p => p.Id).UseIdentityByDefaultColumn();
+            });
+
             modelBuilder.Entity<Product>().HasData(
                 new Product
                 {
