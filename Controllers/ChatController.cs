@@ -23,7 +23,7 @@ namespace TortasYaniAPI.Controllers
         public class ChatRequestDTO
         {
             [JsonPropertyName("messages")]
-            public List<ChatMessageDTO> Messages { get; set; } = new();
+            public JsonElement Messages { get; set; }
 
             [JsonPropertyName("model")]
             public string? Model { get; set; }
@@ -33,15 +33,6 @@ namespace TortasYaniAPI.Controllers
 
             [JsonPropertyName("max_tokens")]
             public int? MaxTokens { get; set; }
-        }
-
-        public class ChatMessageDTO
-        {
-            [JsonPropertyName("role")]
-            public string Role { get; set; } = string.Empty;
-
-            [JsonPropertyName("content")]
-            public string Content { get; set; } = string.Empty;
         }
 
         [HttpPost]
@@ -63,21 +54,15 @@ namespace TortasYaniAPI.Controllers
                 var client = _httpClientFactory.CreateClient();
                 client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey.Trim());
 
-                var payload = new
+                var payload = new Dictionary<string, object?>
                 {
-                    model = string.IsNullOrEmpty(dto.Model) ? "llama-3.3-70b-versatile" : dto.Model,
-                    messages = dto.Messages,
-                    temperature = dto.Temperature ?? 0.7,
-                    max_tokens = dto.MaxTokens ?? 500
+                    ["model"] = string.IsNullOrEmpty(dto.Model) ? "llama-3.3-70b-versatile" : dto.Model,
+                    ["messages"] = dto.Messages,
+                    ["temperature"] = dto.Temperature ?? 0.7,
+                    ["max_tokens"] = dto.MaxTokens ?? 500
                 };
 
-                var jsonOptions = new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                };
-
-                var jsonPayload = JsonSerializer.Serialize(payload, jsonOptions);
+                var jsonPayload = JsonSerializer.Serialize(payload);
                 var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync("https://api.groq.com/openai/v1/chat/completions", content);
 
