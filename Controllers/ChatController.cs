@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TortasYaniAPI.Controllers
 {
@@ -21,15 +22,25 @@ namespace TortasYaniAPI.Controllers
 
         public class ChatRequestDTO
         {
+            [JsonPropertyName("messages")]
             public List<ChatMessageDTO> Messages { get; set; } = new();
+
+            [JsonPropertyName("model")]
             public string? Model { get; set; }
+
+            [JsonPropertyName("temperature")]
             public double? Temperature { get; set; }
+
+            [JsonPropertyName("max_tokens")]
             public int? MaxTokens { get; set; }
         }
 
         public class ChatMessageDTO
         {
+            [JsonPropertyName("role")]
             public string Role { get; set; } = string.Empty;
+
+            [JsonPropertyName("content")]
             public string Content { get; set; } = string.Empty;
         }
 
@@ -50,7 +61,7 @@ namespace TortasYaniAPI.Controllers
                 }
 
                 var client = _httpClientFactory.CreateClient();
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey.Trim());
 
                 var payload = new
                 {
@@ -60,14 +71,21 @@ namespace TortasYaniAPI.Controllers
                     max_tokens = dto.MaxTokens ?? 500
                 };
 
-                var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                };
+
+                var jsonPayload = JsonSerializer.Serialize(payload, jsonOptions);
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync("https://api.groq.com/openai/v1/chat/completions", content);
 
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Error llamando a Groq API: {Response}", responseString);
+                    _logger.LogError("Error llamando a Groq API ({StatusCode}): {Response}", response.StatusCode, responseString);
                     return StatusCode((int)response.StatusCode, new { Success = false, Message = "Error de respuesta del proveedor de IA.", Detail = responseString });
                 }
 
